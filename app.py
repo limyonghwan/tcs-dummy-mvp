@@ -1,5 +1,6 @@
 import streamlit as st
 from datetime import datetime
+import requests
 
 st.set_page_config(
     page_title="TCS 입문형 스캔",
@@ -272,6 +273,28 @@ def decide_type(tag_scores, top_tags):
 
     return "TYPE_H"
 
+def send_feedback_to_sheet(payload):
+    try:
+        webhook_url = st.secrets["FEEDBACK_WEBHOOK_URL"]
+    except Exception:
+        return False, "피드백 저장 주소가 설정되지 않았습니다."
+
+    try:
+        response = requests.post(
+            webhook_url,
+            json=payload,
+            timeout=10
+        )
+
+        if response.status_code == 200:
+            return True, "피드백이 정상적으로 전송되었습니다."
+
+        return False, f"전송 실패: 상태 코드 {response.status_code}"
+
+    except Exception as error:
+        return False, f"전송 중 오류가 발생했습니다: {error}"
+
+
 
 # -----------------------------
 # 4. 화면
@@ -473,13 +496,35 @@ if st.session_state.get("result_ready"):
         feedback_submitted = st.form_submit_button("피드백 요약 만들기")
 
     if feedback_submitted:
-        feedback_text = f"""
+        payload = {
+            "test_time": datetime.now().strftime("%Y-%m-%d %H:%M"),
+            "result_name": report["name"],
+            "primary_signal": f"{primary_label} / {strength_words[primary_tag]}",
+            "secondary_signal": f"{secondary_label} / {strength_words[secondary_tag]}",
+            "third_signal": f"{third_label} / {strength_words[third_tag]}",
+            "fit_score": fit_score,
+            "best_part": best_part,
+            "unclear_part": unclear_part,
+            "want_more": want_more,
+            "want_full": want_full,
+            "paid_condition": paid_condition
+        }
+
+        ok, message = send_feedback_to_sheet(payload)
+
+        if ok:
+            st.success("피드백이 전송되었습니다. 테스트에 참여해줘서 고마워요.")
+        else:
+            st.error(message)
+            st.warning("전송이 실패한 경우 아래 내용을 복사해서 전달해주세요.")
+
+            fallback_text = f"""
 [TCS 초기 데모 테스트 피드백]
-테스트 일시: {datetime.now().strftime("%Y-%m-%d %H:%M")}
-결과 유형: {report["name"]}
-1순위 신호: {primary_label} / {strength_words[primary_tag]}
-2순위 신호: {secondary_label} / {strength_words[secondary_tag]}
-3순위 신호: {third_label} / {strength_words[third_tag]}
+테스트 일시: {payload["test_time"]}
+결과 유형: {payload["result_name"]}
+1순위 신호: {payload["primary_signal"]}
+2순위 신호: {payload["secondary_signal"]}
+3순위 신호: {payload["third_signal"]}
 
 1. 결과 공감도: {fit_score}/10
 2. 가장 와닿은 부분: {best_part}
@@ -488,12 +533,4 @@ if st.session_state.get("result_ready"):
 5. 정식 진단 의향: {want_full}
 6. 유료 결제 조건: {paid_condition}
 """
-        st.markdown("### 복사용 피드백 요약")
-        st.code(feedback_text, language="text")
-
-        st.download_button(
-            label="피드백 TXT 다운로드",
-            data=feedback_text,
-            file_name="tcs_feedback.txt",
-            mime="text/plain"
-        )
+            st.code(fallback_text, language="text")
