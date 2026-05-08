@@ -298,17 +298,17 @@ with st.form("scan_form"):
 
     answers = {}
 
-for idx, q in enumerate(questions, start=1):
-    answers[q["id"]] = st.slider(
-        f"{idx}. {q['text']}",
-        min_value=0,
-        max_value=10,
-        value=5,
-        step=1
-    )
+    for idx, q in enumerate(questions, start=1):
+        answers[q["id"]] = st.slider(
+            f"{idx}. {q['text']}",
+            min_value=0,
+            max_value=10,
+            value=5,
+            step=1
+        )
 
     submitted = st.form_submit_button("결과 보기")
-
+    
 if submitted:
     tag_scores, top_tags, result_type = calculate_result(answers)
     report = reports[result_type]
