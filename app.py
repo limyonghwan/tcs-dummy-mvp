@@ -330,8 +330,8 @@ if st.session_state.get("result_ready"):
     st.write(report["summary"])
 
     st.markdown("### 주요 신호")
-    for idx, tag in enumerate(top_tags, start=1):
-strength = get_strength(tag_scores[tag])
+for idx, tag in enumerate(top_tags, start=1):
+    strength = get_strength(tag_scores[tag])
 
 if strength == "강함":
     strength_text = "강하게 나타남"
