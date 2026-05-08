@@ -277,16 +277,17 @@ def decide_type(tag_scores, top_tags):
 # 4. 화면
 # -----------------------------
 st.title("TCS 입문형 스캔")
-st.caption("Time Choice Structure · 더미 MVP 테스트 버전")
+st.caption("Time Choice Structure · 초기 데모 버전")
 
 st.write(
     "계획은 세우지만 실행에서 반복적으로 이탈한다면, "
     "당신의 시간 선택 구조가 어디서 흔들리는지 가볍게 확인해보세요."
 )
 
-st.info(
-    "이 버전은 시장 반응과 리포트 흐름을 확인하기 위한 더미 MVP입니다. "
-    "실제 TCS의 전체 문항, 가중치, 유형 판정표는 포함되어 있지 않습니다."
+st.warning(
+    "**주의 사항**\n\n"
+    "이 버전은 TCS 검사 초기 데모 버전입니다.\n\n"
+    "실제 검사 단계의 전체 문항과 해석은 최종 버전과는 많이 다를 수 있습니다."
 )
 
 st.divider()
@@ -297,14 +298,14 @@ with st.form("scan_form"):
 
     answers = {}
 
-    for q in questions:
-        answers[q["id"]] = st.slider(
-            q["text"],
-            min_value=0,
-            max_value=10,
-            value=5,
-            step=1
-        )
+for idx, q in enumerate(questions, start=1):
+    answers[q["id"]] = st.slider(
+        f"{idx}. {q['text']}",
+        min_value=0,
+        max_value=10,
+        value=5,
+        step=1
+    )
 
     submitted = st.form_submit_button("결과 보기")
 
@@ -473,7 +474,7 @@ if st.session_state.get("result_ready"):
 
     if feedback_submitted:
         feedback_text = f"""
-[TCS 더미 MVP 테스트 피드백]
+[TCS 초기 데모 테스트 피드백]
 테스트 일시: {datetime.now().strftime("%Y-%m-%d %H:%M")}
 결과 유형: {report["name"]}
 1순위 신호: {primary_label} / {strength_words[primary_tag]}
