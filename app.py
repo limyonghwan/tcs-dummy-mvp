@@ -331,10 +331,20 @@ if st.session_state.get("result_ready"):
 
     st.markdown("### 주요 신호")
     for idx, tag in enumerate(top_tags, start=1):
-        st.write(
-            f"{idx}순위 신호: **{tag_labels[tag]}** "
-            f"({tag_scores[tag]}점 / {get_strength(tag_scores[tag])})"
-        )
+strength = get_strength(tag_scores[tag])
+
+if strength == "강함":
+    strength_text = "강하게 나타남"
+elif strength == "중간":
+    strength_text = "중간 이상으로 나타남"
+elif strength == "약함":
+    strength_text = "약하게 나타남"
+else:
+    strength_text = "낮게 나타남"
+
+st.write(
+    f"{idx}순위 신호: **{tag_labels[tag]}** / {strength_text}"
+)
 
     st.markdown("### 해석")
     st.write(report["interpretation"])
@@ -350,6 +360,9 @@ if st.session_state.get("result_ready"):
         "자기보고 신뢰도 등을 함께 확인할 수 있습니다."
     )
 
+debug_mode = st.sidebar.checkbox("운영자 보기", value=False)
+
+if debug_mode:
     with st.expander("더미 계산 결과 보기"):
         st.write("태그별 평균 점수")
         for tag, score in tag_scores.items():
