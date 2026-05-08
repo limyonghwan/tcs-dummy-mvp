@@ -324,6 +324,91 @@ if st.session_state.get("result_ready"):
     top_tags = st.session_state["top_tags"]
     report = st.session_state["report"]
 
+    strength_words = {}
+
+    for tag in top_tags:
+        strength = get_strength(tag_scores[tag])
+
+        if strength == "강함":
+            strength_words[tag] = "강하게 나타남"
+        elif strength == "중간":
+            strength_words[tag] = "중간 이상으로 나타남"
+        elif strength == "약함":
+            strength_words[tag] = "약하게 나타남"
+        else:
+            strength_words[tag] = "낮게 나타남"
+
+    primary_tag = top_tags[0]
+    secondary_tag = top_tags[1]
+    third_tag = top_tags[2]
+
+    primary_label = tag_labels[primary_tag]
+    secondary_label = tag_labels[secondary_tag]
+    third_label = tag_labels[third_tag]
+
+    pair_key = tuple(top_tags[:2])
+
+    flow_patterns = {
+        ("DELAY", "SHAME_LOOP"): (
+            "현재 응답 흐름에서는 시작이 늦어지고, 늦어진 시간에 대한 자책이 다시 다음 시작을 무겁게 만드는 흐름이 보입니다. "
+            "해야 할 일을 모르는 것이 아니라, 시작 전의 부담과 시작 후의 자책이 서로 이어지며 시간을 붙잡는 구조에 가깝습니다."
+        ),
+        ("SHAME_LOOP", "DELAY"): (
+            "현재 응답 흐름에서는 자책이 먼저 크게 남고, 그 감정이 다음 시작을 더 늦추는 흐름이 보입니다. "
+            "이 경우 중요한 것은 더 강하게 몰아붙이는 것이 아니라, 자책이 시작을 막기 전에 첫 행동을 작게 만드는 것입니다."
+        ),
+        ("DELAY", "AVOID"): (
+            "현재 응답 흐름에서는 중요한 일을 앞둔 순간 첫 행동이 늦어지고, 부담을 낮추기 위해 다른 선택으로 돌아서는 흐름이 보입니다. "
+            "일을 하기 싫다기보다, 시작 직전의 압력이 다른 선택을 끌어당기는 구조에 가깝습니다."
+        ),
+        ("AVOID", "DELAY"): (
+            "현재 응답 흐름에서는 부담을 피하려는 선택이 먼저 나타나고, 그 결과 시작이 뒤로 밀리는 흐름이 보입니다. "
+            "이 경우 시간은 사라진다기보다, 당장의 편안함을 선택하는 쪽으로 방향을 바꾸는 모습에 가깝습니다."
+        ),
+        ("INTRUSION", "ANCHOR_GAP"): (
+            "현재 응답 흐름에서는 목표의 방향은 존재하지만, 외부 자극이 오늘의 선택을 다른 곳으로 끌고 가는 모습이 보입니다. "
+            "집중력이 없는 것이 아니라, 시간의 방향이 외부 신호에 의해 자주 재배치되는 흐름에 가깝습니다."
+        ),
+        ("ANCHOR_GAP", "INTRUSION"): (
+            "현재 응답 흐름에서는 장기 목표와 오늘의 선택 사이에 간극이 생기고, 그 틈으로 외부 자극이 쉽게 들어오는 모습이 보입니다. "
+            "큰 목표는 있지만 그것이 오늘의 첫 행동으로 충분히 고정되지 않은 상태에 가깝습니다."
+        ),
+        ("OVERPLAN", "DELAY"): (
+            "현재 응답 흐름에서는 준비와 정리가 길어지면서 첫 행동이 뒤로 밀리는 흐름이 보입니다. "
+            "무계획이 문제가 아니라, 더 잘하고 싶다는 마음이 실행 이전의 준비 단계에 오래 머무르게 하는 구조에 가깝습니다."
+        ),
+        ("DELAY", "OVERPLAN"): (
+            "현재 응답 흐름에서는 시작이 늦어지는 과정에서 계획과 준비가 안전한 머무름의 공간처럼 작동하는 모습이 보입니다. "
+            "계획은 필요하지만, 어느 순간 실행을 미루는 이유가 될 수 있습니다."
+        ),
+        ("BURNOUT", "DELAY"): (
+            "현재 응답 흐름에서는 해야 한다는 인식은 있지만, 에너지 저하로 인해 시작선 앞에서 멈추는 모습이 보입니다. "
+            "이 경우 더 강한 의지보다 회복 가능한 작은 실행 리듬이 먼저 필요할 수 있습니다."
+        ),
+        ("DELAY", "BURNOUT"): (
+            "현재 응답 흐름에서는 시작이 늦어지는 이유가 단순한 회피라기보다, 실행을 지속할 에너지가 충분히 올라오지 않는 상태와 연결되어 보입니다. "
+            "작업의 크기를 줄이고 회복 조건을 함께 확인하는 것이 중요합니다."
+        ),
+        ("AVOID", "SHAME_LOOP"): (
+            "현재 응답 흐름에서는 부담을 피하려는 선택이 뒤늦은 자책과 연결되는 모습이 보입니다. "
+            "당장의 회피는 마음을 잠시 가볍게 하지만, 시간이 지난 뒤 다시 자신을 압박하는 방향으로 돌아올 수 있습니다."
+        ),
+        ("SHAME_LOOP", "AVOID"): (
+            "현재 응답 흐름에서는 자책이 쌓이면서 다음 선택에서 다시 회피가 강화되는 모습이 보입니다. "
+            "이 경우 자책을 줄이는 것이 단순한 위로가 아니라, 다음 실행을 가능하게 만드는 조건이 됩니다."
+        ),
+    }
+
+    flow_text = flow_patterns.get(
+        pair_key,
+        (
+            f"현재 응답 흐름에서는 {primary_label} 신호가 가장 먼저 드러나고, "
+            f"그 뒤에 {secondary_label} 신호가 겹쳐지는 모습이 보입니다. "
+            f"여기에 {third_label} 신호가 보조적으로 붙으면서, 오늘의 시간 선택이 한 방향으로 고정되기보다 "
+            "상황에 따라 흔들리는 흐름으로 읽힙니다."
+        )
+    )
+
     st.divider()
     st.subheader("결과 리포트")
     st.markdown(f"## {report['name']}")
@@ -331,19 +416,8 @@ if st.session_state.get("result_ready"):
 
     st.markdown("### 주요 신호")
     for idx, tag in enumerate(top_tags, start=1):
-        strength = get_strength(tag_scores[tag])
-
-        if strength == "강함":
-            strength_text = "강하게 나타남"
-        elif strength == "중간":
-            strength_text = "중간 이상으로 나타남"
-        elif strength == "약함":
-            strength_text = "약하게 나타남"
-        else:
-            strength_text = "낮게 나타남"
-
         st.write(
-            f"{idx}순위 신호: **{tag_labels[tag]}** / {strength_text}"
+            f"{idx}순위 신호: **{tag_labels[tag]}** / {strength_words[tag]}"
         )
 
     st.markdown("### 해석")
@@ -353,20 +427,31 @@ if st.session_state.get("result_ready"):
     for idx, action in enumerate(report["actions"], start=1):
         st.success(f"{idx}. {action}")
 
+    st.markdown("### 선택 결과 계산 추정도")
+
+    with st.expander("내 응답이 어떤 시간 선택 흐름으로 읽혔는지 보기"):
+        st.caption(
+            "이 영역은 내부 계산표가 아니라, 현재 응답 흐름을 사람이 읽을 수 있는 문장으로 바꾼 참고 해석입니다."
+        )
+
+        st.write(f"가장 먼저 드러난 선택 흐름은 **{primary_label}**입니다.")
+        st.write(f"그다음으로 겹쳐진 흐름은 **{secondary_label}**입니다.")
+        st.write(f"보조적으로 함께 감지된 흐름은 **{third_label}**입니다.")
+
+        st.info(flow_text)
+
+        st.write(
+            "즉, 이 결과는 단순히 점수를 합산한 결론이라기보다, "
+            "당신이 해야 할 일 앞에서 어떤 식으로 시간을 선택하고, 어디서 방향이 흔들리며, "
+            "어떤 감정이나 자극이 그 선택에 영향을 주는지를 문장으로 추정한 것입니다."
+        )
+
     st.markdown("### 결과 읽는 법")
     st.info(
         "이 결과는 현재 응답에서 가장 두드러진 시간 선택 신호를 바탕으로 만든 입문형 리포트입니다. "
         "정식 진단에서는 더 많은 문항과 검증 문항을 통해 우선순위 충돌, 회피 반응, 스트레스 반응, "
         "자기보고 신뢰도 등을 함께 확인할 수 있습니다."
     )
-
-debug_mode = st.sidebar.checkbox("운영자 보기", value=False)
-
-if debug_mode:
-    with st.expander("더미 계산 결과 보기"):
-        st.write("태그별 평균 점수")
-        for tag, score in tag_scores.items():
-            st.write(f"{tag_labels[tag]}: {score}점")
 
     st.divider()
     st.subheader("테스트 피드백")
@@ -391,9 +476,9 @@ if debug_mode:
 [TCS 더미 MVP 테스트 피드백]
 테스트 일시: {datetime.now().strftime("%Y-%m-%d %H:%M")}
 결과 유형: {report["name"]}
-1순위 신호: {tag_labels[top_tags[0]]} / {tag_scores[top_tags[0]]}점
-2순위 신호: {tag_labels[top_tags[1]]} / {tag_scores[top_tags[1]]}점
-3순위 신호: {tag_labels[top_tags[2]]} / {tag_scores[top_tags[2]]}점
+1순위 신호: {primary_label} / {strength_words[primary_tag]}
+2순위 신호: {secondary_label} / {strength_words[secondary_tag]}
+3순위 신호: {third_label} / {strength_words[third_tag]}
 
 1. 결과 공감도: {fit_score}/10
 2. 가장 와닿은 부분: {best_part}
